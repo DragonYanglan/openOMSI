@@ -463,6 +463,7 @@ pub struct LightObject {
     pub sound: Option<PathBuf>,
     pub sounds: Arc<Mutex<Option<omsi_audio::SoundSet>>>,
     pub shown: Option<u64>,
+    pub texts: Vec<(TextureId, omsi_sim::texttex::TextTextureState)>,
 }
 
 pub struct SplineType {
@@ -7149,6 +7150,8 @@ impl World {
                         Vec::new();
                     let mut script_texts: Vec<(TextureId, omsi_sim::texttex::TextTextureState)> =
                         Vec::new();
+                    let mut lamp_texts: Vec<(TextureId, omsi_sim::texttex::TextTextureState)> =
+                        Vec::new();
                     // `[htmltexture]` pages shown on this object: (script texture index, texture)
                     let mut html_pages: Vec<(usize, TextureId)> = Vec::new();
                     let mut html_mats: HashMap<usize, MaterialId> = HashMap::new();
@@ -7381,8 +7384,7 @@ impl World {
                                     // a script's string variable (the stock bus stop display's
                                     // departures): a texture of the object's own, drawn by
                                     // `update_scripted` whenever the script refreshes it
-                                    let scripted_text = lamp.is_none()
-                                        && tt.variable.trim().parse::<usize>().is_err()
+                                    let scripted_text = tt.variable.trim().parse::<usize>().is_err()
                                         && ot
                                             .program
                                             .as_ref()
@@ -7412,7 +7414,11 @@ impl World {
                                         tg.textures.push(tex);
                                         tg.materials.push(mat);
                                         renderer.set_material(scene, inst, slot, mat);
-                                        script_texts.push((tex, state));
+                                        if lamp.is_none() {
+                                            script_texts.push((tex, state));
+                                        } else {
+                                            lamp_texts.push((tex, state));
+                                        }
                                         continue;
                                     }
                                     let text = tt
@@ -7681,6 +7687,7 @@ impl World {
                             sound,
                             sounds: Default::default(),
                             shown: None,
+                            texts: lamp_texts,
                         });
                     } else if let Some(inst) = object_script.take() {
                         let texture_selection = scenery_texture_selection(&ot, &inst);
